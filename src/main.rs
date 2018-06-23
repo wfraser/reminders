@@ -2,78 +2,12 @@ extern crate chrono;
 extern crate serde;
 extern crate toml;
 
+mod config;
+use config::{Event, Reminders};
+
 use std::fs::File;
 use std::io::{self, Read};
 use std::path::Path;
-use serde::de::{self, MapAccess, Visitor};
-
-#[derive(Debug, Default)]
-struct Reminders {
-    events: Vec<(String, chrono::NaiveDate)>,
-}
-
-impl<'de> serde::Deserialize<'de> for Reminders {
-    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        struct RootVisitor;
-        impl<'de> Visitor<'de> for RootVisitor {
-            type Value = Reminders;
-            fn expecting(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
-                f.write_str("a 'reminders' table")
-            }
-            fn visit_map<V: MapAccess<'de>>(self, mut map: V) -> Result<Self::Value, V::Error> {
-                let mut reminders = Err(de::Error::missing_field("reminders"));
-                while let Some(key) = map.next_key::<&'de str>()? {
-                    if key == "reminders" {
-                        let Events(events) = map.next_value()?;
-                        reminders = Ok(Reminders { events });
-                    } else {
-                        eprintln!("warning: unexpected root-level entry {:?} in configuration", key);
-                        map.next_value::<toml::Value>()?; // ignore the value and move on
-                    }
-                }
-                reminders
-            }
-        }
-        deserializer.deserialize_map(RootVisitor)
-    }
-}
-
-struct Events(Vec<(String, chrono::NaiveDate)>);
-impl<'de> serde::Deserialize<'de> for Events {
-    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        struct EventsVisitor;
-        impl<'de> Visitor<'de> for EventsVisitor {
-            type Value = Events;
-            fn expecting(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
-                f.write_str("a table of event names and dates")
-            }
-            fn visit_map<V: MapAccess<'de>>(self, mut map: V) -> Result<Self::Value, V::Error> {
-                let mut events = vec![];
-                while let Some((key, value)) = map.next_entry::<&'de str, toml::Value>()? {
-                    let date = match value {
-                        toml::Value::Datetime(dt) => {
-                            match chrono::NaiveDate::parse_from_str(&dt.to_string(), "%Y-%m-%d") {
-                                Ok(date) => date,
-                                Err(e) => {
-                                    return Err(de::Error::custom(format!(
-                                        "invalid date: {}, for `{}`", e, key)));
-                                }
-                            }
-                        },
-                        other => {
-                            return Err(de::Error::custom(format!(
-                                "expected a datetime, not a {} for `{}`", other.type_str(), key)));
-                        }
-                    };
-                    events.push((key.to_owned(), date));
-                }
-
-                Ok(Events(events))
-            }
-        }
-        deserializer.deserialize_map(EventsVisitor)
-    }
-}
 
 #[derive(Debug)]
 enum Error {
@@ -121,7 +55,7 @@ fn main() {
     let now = chrono::Local::today().naive_local();
 
     let mut output = vec![];
-    for (mut name, date) in config.events {
+    for Event { mut name, date } in config.events {
         name.push(':');
         let diff = now - date;
         let days = (diff.num_days() as f64).abs();
