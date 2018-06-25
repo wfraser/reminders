@@ -1,7 +1,6 @@
 use chrono;
-use serde;
-use serde::de::{self, MapAccess, Visitor};
-use toml;
+use std::io::BufRead;
+use super::Error;
 
 #[derive(Debug)]
 pub struct Reminders {
@@ -14,81 +13,40 @@ pub struct Event {
     pub date: chrono::NaiveDate,
 }
 
-impl<'de> serde::Deserialize<'de> for Reminders {
-    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D)
-        -> Result<Self, D::Error>
-    {
-        struct RootVisitor;
-        impl<'de> Visitor<'de> for RootVisitor {
-            type Value = Reminders;
-
-            fn expecting(&self, f: &mut ::std::fmt::Formatter)
-                -> ::std::fmt::Result
-            {
-                f.write_str("a `reminders` table")
+impl Reminders {
+    pub fn from_bufread(r: impl BufRead) -> Result<Self, Error> {
+        let mut reminders = Reminders { events: vec![] };
+        for (line_number, line_result) in r.lines().enumerate() {
+            let mut line = line_result.map_err(Error::IO)?;
+            if let Some(comment_pos) = line.find('#') {
+                line.truncate(comment_pos);
             }
-
-            fn visit_map<V: MapAccess<'de>>(self, mut map: V)
-                -> Result<Self::Value, V::Error>
-            {
-                let mut reminders = Err(de::Error::missing_field("reminders"));
-                while let Some(key) = map.next_key::<&'de str>()? {
-                    if key == "reminders" {
-                        let Events(events) = map.next_value()?;
-                        reminders = Ok(Reminders { events });
-                    } else {
-                        eprintln!("warning: unexpected root-level entry {:?}
-                                    in configuration", key);
-                        map.next_value::<toml::Value>()?; // ignore the value and move on
-                    }
-                }
-                reminders
+            if line.trim().is_empty() {
+                continue;
             }
+            let event = Event::from_string(line)
+                .map_err(|e| Error::Config(format!("on line {}: {}", line_number + 1, e)))?;
+            reminders.events.push(event);
         }
-
-        deserializer.deserialize_map(RootVisitor)
+        Ok(reminders)
     }
 }
 
-struct Events(Vec<Event>);
-impl<'de> serde::Deserialize<'de> for Events {
-    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        struct EventsVisitor;
-        impl<'de> Visitor<'de> for EventsVisitor {
-            type Value = Events;
+impl Event {
+    pub fn from_string(mut s: String) -> Result<Self, String> {
+        let colon_pos = s.find(':').ok_or("no ':' found".to_owned())?;
 
-            fn expecting(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
-                f.write_str("a table of event names and dates")
-            }
+        let date = {
+            let date_str = &s[colon_pos + 1 .. ].trim();
+            chrono::NaiveDate::parse_from_str(&date_str, "%Y-%m-%d")
+                .map_err(|e| format!("bad date: {}", e))?
+        };
 
-            fn visit_map<V: MapAccess<'de>>(self, mut map: V) -> Result<Self::Value, V::Error> {
-                let mut events = vec![];
-                while let Some((key, value)) = map.next_entry::<&'de str, toml::Value>()? {
-                    let date = match value {
-                        toml::Value::Datetime(dt) => {
-                            match chrono::NaiveDate::parse_from_str(&dt.to_string(), "%Y-%m-%d") {
-                                Ok(date) => date,
-                                Err(e) => {
-                                    return Err(de::Error::custom(format!(
-                                        "invalid date: {}, for `{}`", e, key)));
-                                }
-                            }
-                        },
-                        other => {
-                            return Err(de::Error::custom(format!(
-                                "expected a datetime, not a {} for `{}`", other.type_str(), key)));
-                        }
-                    };
-                    events.push(Event {
-                        name: key.to_owned(),
-                        date,
-                    });
-                }
+        s.truncate(colon_pos);
 
-                Ok(Events(events))
-            }
-        }
-
-        deserializer.deserialize_map(EventsVisitor)
+        Ok(Event {
+            name: s,
+            date,
+        })
     }
 }

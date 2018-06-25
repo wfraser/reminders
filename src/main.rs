@@ -1,27 +1,23 @@
 extern crate chrono;
-extern crate serde;
-extern crate toml;
 
 mod config;
 use config::{Event, Reminders};
 
 use std::fs::File;
-use std::io::{self, Read};
+use std::io::{self, BufReader};
 use std::path::Path;
 
 #[derive(Debug)]
-enum Error {
+pub enum Error {
     IO(io::Error),
-    Config(toml::de::Error),
+    Config(String),
 }
 
 fn read_config(path: impl AsRef<Path>) -> Result<Reminders, Error> {
-    let mut f = File::open(path.as_ref()).map_err(Error::IO)?;
-    let mut whole_file = vec![];
-    f.read_to_end(&mut whole_file).map_err(Error::IO)?;
-
-    let reminders = toml::from_slice::<Reminders>(&whole_file).map_err(Error::Config)?;
-    Ok(reminders)
+    Reminders::from_bufread(
+        BufReader::new(
+            File::open(path.as_ref()).map_err(Error::IO)?
+    ))
 }
 
 fn daysto(duration: &chrono::Duration) -> String {
@@ -39,7 +35,7 @@ fn daysto(duration: &chrono::Duration) -> String {
 
 fn main() {
     let path = std::env::args_os().nth(1).unwrap_or_else(|| {
-        eprintln!("usage: {} <reminders.toml>", std::env::args().nth(0).unwrap());
+        eprintln!("usage: {} <reminders.conf>", std::env::args().nth(0).unwrap());
         std::process::exit(2);
     });
 
