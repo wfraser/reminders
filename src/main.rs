@@ -3,6 +3,7 @@ extern crate chrono;
 mod config;
 use config::{Event, Reminders};
 
+use std::ffi::OsString;
 use std::fs::File;
 use std::io::{self, BufReader};
 use std::path::Path;
@@ -20,21 +21,26 @@ fn read_config(path: impl AsRef<Path>) -> Result<Reminders, Error> {
     ))
 }
 
-fn daysto(duration: &chrono::Duration) -> String {
-    let days = duration.num_days();
-    if days == 0 {
-        "today".to_owned()
-    } else if days == -1 {
-        "yesterday".to_owned()
-    } else if days == 1 {
-        "tomorrow".to_owned()
-    } else {
-        format!("{} days", days)
+fn config_path() -> Option<OsString> {
+    use std::ffi::OsStr;
+    let args = std::env::args_os().skip(1);
+    let mut double_dash = false;
+    for s in args {
+        if !double_dash {
+            if s == OsStr::new("--") {
+                double_dash = true;
+                continue;
+            } else if s == OsStr::new("--help") || s == OsStr::new("-h") {
+                return None;
+            }
+        }
+        return Some(s);
     }
+    None
 }
 
 fn main() {
-    let path = std::env::args_os().nth(1).unwrap_or_else(|| {
+    let path = config_path().unwrap_or_else(|| {
         eprintln!("usage: {} <reminders.conf>", std::env::args().nth(0).unwrap());
         std::process::exit(2);
     });
@@ -75,7 +81,15 @@ fn main() {
         } else {
             None
         };
-        let total_days = Some(format!("({})", daysto(&diff)));
+        let total_days = Some(if days == 0. {
+            "(today)".to_owned()
+        } else if days == -1. {
+            "(yesterday)".to_owned()
+        } else if days == 1. {
+            "(tomorrow)".to_owned()
+        } else {
+            format!("({} days)", days)
+        });
 
         output.push(vec![
             Some(name),
