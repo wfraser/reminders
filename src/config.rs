@@ -34,7 +34,7 @@ impl Reminders {
 
 impl Event {
     pub fn from_string(mut s: String) -> Result<Self, String> {
-        let colon_pos = s.find(':').ok_or("no ':' found".to_owned())?;
+        let colon_pos = s.find(':').ok_or_else(|| "no ':' found".to_owned())?;
 
         let date = {
             let date_str = &s[colon_pos + 1 .. ].trim();

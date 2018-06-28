@@ -39,6 +39,26 @@ fn config_path() -> Option<OsString> {
     None
 }
 
+fn duration_ymd(diff: &chrono::Duration) -> (u64, u64, u64) {
+    let days = (diff.num_days() as f64).abs();
+
+    let years = if days > 365.25 {
+        (days / 365.25).floor() as u64
+    } else {
+        0
+    };
+
+    let months = if days > (365.25 / 12.) {
+        ((days % 365.25) / (365.25 / 12.)).floor() as u64
+    } else {
+        0
+    };
+
+    let days = (days % (365.25 / 12.)).floor() as u64;
+
+    (years, months, days)
+}
+
 fn main() {
     let path = config_path().unwrap_or_else(|| {
         eprintln!("usage: {} <reminders.conf>", std::env::args().nth(0).unwrap());
@@ -60,32 +80,27 @@ fn main() {
     for Event { mut name, date } in config.events {
         name.push(':');
         let diff = now - date;
-        let days = (diff.num_days() as f64).abs();
+        let days = diff.num_days();
 
         let formatted_date = Some(format!("{} -", date.format("%B %-d, %Y")));
-        let years = if days > 365.25 {
-            Some(format!("{} years,", (days / 365.25).floor()))
-        } else {
-            None
-        };
-        let months = if days > (365.25 / 12.) {
-            Some(format!("{} months,", ((days % 365.25) / (365.25 / 12.)).floor()))
-        } else {
-            None
-        };
-        let just_days = Some(format!("{} days", (days % (365.25 / 12.)).floor()));
-        let suffix = if diff.num_days() < -1 {
+
+        let (y,m,d) = duration_ymd(&diff);
+        let years = if y != 0 { Some(format!("{} years,", y)) } else { None };
+        let months = if m != 0 { Some(format!("{} months,", m)) } else { None };
+        let just_days = if d != 0 { Some(format!("{} days", d)) } else { None };
+
+        let suffix = if days < -1 {
             Some("to go".to_owned())
-        } else if diff.num_days() > 1 {
+        } else if days > 1 {
             Some("ago".to_owned())
         } else {
             None
         };
-        let total_days = Some(if days == 0. {
+        let total_days = Some(if days == 0 {
             "(today)".to_owned()
-        } else if days == -1. {
+        } else if days == -1 {
             "(yesterday)".to_owned()
-        } else if days == 1. {
+        } else if days == 1 {
             "(tomorrow)".to_owned()
         } else {
             format!("({} days)", days)
