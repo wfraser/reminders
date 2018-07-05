@@ -98,9 +98,9 @@ fn main() {
         };
         let total_days = Some(if days == 0 {
             "(today)".to_owned()
-        } else if days == -1 {
-            "(yesterday)".to_owned()
         } else if days == 1 {
+            "(yesterday)".to_owned()
+        } else if days == -1 {
             "(tomorrow)".to_owned()
         } else {
             format!("({} days)", days)
