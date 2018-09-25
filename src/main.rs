@@ -87,11 +87,17 @@ fn main() {
         let (y,m,d) = duration_ymd(&diff);
         let years = if y != 0 { Some(format!("{} years,", y)) } else { None };
         let months = if m != 0 { Some(format!("{} months,", m)) } else { None };
-        let just_days = if d != 0 { Some(format!("{} days", d)) } else { None };
+        let just_days = if d == 1 {
+            Some("1 day".to_owned())
+        } else if d != 0 {
+            Some(format!("{} days", d))
+        } else {
+            None
+        };
 
-        let suffix = if days < -1 {
+        let suffix = if days < 0 {
             Some("to go".to_owned())
-        } else if days > 1 {
+        } else if days > 0 {
             Some("ago".to_owned())
         } else {
             None
