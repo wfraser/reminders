@@ -85,14 +85,20 @@ fn main() {
         let formatted_date = Some(format!("{} -", date.format("%B %-d, %Y")));
 
         let (y,m,d) = duration_ymd(&diff);
-        let years = if y != 0 { Some(format!("{} years,", y)) } else { None };
-        let months = if m != 0 { Some(format!("{} months,", m)) } else { None };
-        let just_days = if d == 1 {
-            Some("1 day".to_owned())
-        } else if d != 0 {
-            Some(format!("{} days", d))
-        } else {
-            None
+        let years = match y {
+            0 => None,
+            1 => Some("1 year, ".to_owned()),   // significant space
+            y => Some(format!("{} years,", y)),
+        };
+        let months = match m {
+            0 => None,
+            1 => Some("1 month, ".to_owned()),  // significant space
+            m => Some(format!("{} months,", m)),
+        };
+        let just_days = match d {
+            0 => None,
+            1 => Some("1 day ".to_owned()),     // significant space
+            d => Some(format!("{} days", d)),
         };
 
         let suffix = if days < 0 {
@@ -102,14 +108,11 @@ fn main() {
         } else {
             None
         };
-        let total_days = Some(if days == 0 {
-            "(today)".to_owned()
-        } else if days == 1 {
-            "(yesterday)".to_owned()
-        } else if days == -1 {
-            "(tomorrow)".to_owned()
-        } else {
-            format!("({} days)", days)
+        let total_days = Some(match days {
+            0 => "(today)".to_owned(),
+            1 => "(yesterday)".to_owned(),
+            -1 => "(tomorrow)".to_owned(),
+            d => format!("({} days)", d),
         });
 
         output.push(vec![
