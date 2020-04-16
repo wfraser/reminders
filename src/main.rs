@@ -1,4 +1,4 @@
-extern crate chrono;
+#![deny(rust_2018_idioms)]
 
 mod config;
 use config::{Event, Reminders};

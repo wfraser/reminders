@@ -1,4 +1,3 @@
-use chrono;
 use std::io::BufRead;
 use crate::Error;
 
@@ -68,10 +67,9 @@ fn test_event_parse_trim() {
 #[test]
 fn test_reminders() {
     use std::io::{BufReader, Cursor};
-    let input = r"a:2018-06-25
-# comment line
-b: 9999-12-31 # spaghetti
-";
+    let input = "a:2018-06-25\n\
+                 # comment line\n\
+                 b: 9999-12-31 # spaghetti\n";
     let r = Reminders::from_bufread(BufReader::new(Cursor::new(input))).unwrap();
     assert_eq!("a", &r.events[0].name);
     assert_eq!(chrono::NaiveDate::from_ymd(2018, 6, 25), r.events[0].date);

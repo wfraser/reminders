@@ -89,10 +89,11 @@ mod test {
         write_table(
             io::sink(),
             &[Left, Left, Left],
-            &vec![
-                vec!["foo".into(), "bar".into()],
-                vec!["a".into(), "b".into()],
-            ]).unwrap();
+            &v(&[
+                &["foo", "bar"],
+                &["a", "b"],
+            ]),
+        ).unwrap();
     }
 
     #[test]
@@ -101,9 +102,10 @@ mod test {
         write_table(
             io::sink(),
             &[Left],
-            &vec![
-                vec!["foo".into(), "bar".into()],
-                vec!["a".into(), "b".into()],
-            ]).unwrap();
+            &v(&[
+                &["foo", "bar"],
+                &["a", "b"],
+            ]),
+        ).unwrap();
     }
 }
