@@ -1,6 +1,6 @@
 use chrono;
 use std::io::BufRead;
-use super::Error;
+use crate::Error;
 
 #[derive(Debug)]
 pub struct Reminders {

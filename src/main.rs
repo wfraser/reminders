@@ -3,6 +3,9 @@ extern crate chrono;
 mod config;
 use config::{Event, Reminders};
 
+mod table;
+use table::Alignment;
+
 use std::ffi::OsString;
 use std::fs::File;
 use std::io::{self, BufReader};
@@ -76,82 +79,71 @@ fn main() {
 
     let now = chrono::Local::today().naive_local();
 
+    let columns = vec![
+        Alignment::Left,    // name
+        Alignment::Right,   // date
+        Alignment::Right,   // years
+        Alignment::Left,    // "year(s),"
+        Alignment::Right,   // months
+        Alignment::Left,    // "month(s),"
+        Alignment::Right,   // days
+        Alignment::Left,    // "day(s)"
+        Alignment::Left,    // "ago / to go"
+        Alignment::Left,    // "(1234 days)"
+    ];
+
     let mut output = vec![];
     for Event { mut name, date } in config.events {
         name.push(':');
         let diff = now - date;
-        let days = diff.num_days();
+        let total_days = diff.num_days();
 
-        let formatted_date = Some(format!("{} -", date.format("%B %-d, %Y")));
+        let formatted_date = date.format("%B %-d, %Y -");
 
         let (y,m,d) = duration_ymd(&diff);
-        let years = match y {
-            0 => None,
-            1 => Some("1 year, ".to_owned()),   // significant space
-            y => Some(format!("{} years,", y)),
+        let (years, years_unit) = match y {
+            0 => (String::new(), String::new()),
+            1 => ("1".to_owned(), "year,".to_owned()),
+            y => (y.to_string(), "years,".to_owned()),
         };
-        let months = match m {
-            0 => None,
-            1 => Some("1 month, ".to_owned()),  // significant space
-            m => Some(format!("{} months,", m)),
+        let (months, months_unit) = match m {
+            0 => (String::new(), String::new()),
+            1 => ("1".to_owned(), "month,".to_owned()),
+            m => (m.to_string(), "months,".to_owned()),
         };
-        let just_days = match d {
-            0 => None,
-            1 => Some("1 day ".to_owned()),     // significant space
-            d => Some(format!("{} days", d)),
+        let (days, days_unit) = match d {
+            0 => (String::new(), String::new()),
+            1 => ("1".to_owned(), "day".to_owned()),
+            d => (d.to_string(), "days".to_owned()),
         };
 
-        let suffix = if days < 0 {
-            Some("to go".to_owned())
-        } else if days > 0 {
-            Some("ago".to_owned())
+        let suffix = if total_days < 0 {
+            "to go".to_owned()
+        } else if total_days > 0 {
+            "ago".to_owned()
         } else {
-            None
+            String::new()
         };
-        let total_days = Some(match days {
+        let total_days = match total_days {
             0 => "(today)".to_owned(),
             1 => "(yesterday)".to_owned(),
             -1 => "(tomorrow)".to_owned(),
             d => format!("({} days)", d),
-        });
+        };
 
         output.push(vec![
-            Some(name),
-            formatted_date,
+            name,
+            formatted_date.to_string(),
             years,
+            years_unit,
             months,
-            just_days,
+            months_unit,
+            days,
+            days_unit,
             suffix,
             total_days,
         ]);
     }
 
-    let mut widths = vec![];
-    for i in 0 .. output[0].len() {
-        let max = output.iter()
-            .by_ref()
-            .map(|items| {
-                items[i].as_ref()
-                    .map(|s| s.len())
-                    .unwrap_or(0)
-            })
-            .max()
-            .unwrap();
-        widths.push(max);
-    }
-
-    for line in output {
-        for (i, field) in line.iter().enumerate() {
-            if let Some(field) = field {
-                if i >= 1 && i <= 4 {
-                    print!("{:>width$} ", field, width = widths[i]);
-                } else {
-                    print!("{:width$} ", field, width = widths[i]);
-                }
-            } else {
-                print!("{:width$} ", "", width = widths[i]);
-            }
-        }
-        println!();
-    }
+    table::print_table(&columns, &output);
 }
