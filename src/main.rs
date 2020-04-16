@@ -101,21 +101,32 @@ fn main() {
         let formatted_date = date.format("%B %-d, %Y -");
 
         let (y,m,d) = duration_ymd(&diff);
-        let (years, years_unit) = match y {
+        let (years, mut years_unit) = match y {
             0 => (String::new(), String::new()),
-            1 => ("1".to_owned(), "year,".to_owned()),
-            y => (y.to_string(), "years,".to_owned()),
+            1 => ("1".to_owned(), "year".to_owned()),
+            y => (y.to_string(), "years".to_owned()),
         };
-        let (months, months_unit) = match m {
+        let (months, mut months_unit) = match m {
             0 => (String::new(), String::new()),
-            1 => ("1".to_owned(), "month,".to_owned()),
-            m => (m.to_string(), "months,".to_owned()),
+            1 => ("1".to_owned(), "month".to_owned()),
+            m => (m.to_string(), "months".to_owned()),
         };
         let (days, days_unit) = match d {
             0 => (String::new(), String::new()),
             1 => ("1".to_owned(), "day".to_owned()),
             d => (d.to_string(), "days".to_owned()),
         };
+
+        if !days.is_empty() {
+            if !months_unit.is_empty() {
+                months_unit.push(',');
+            }
+            if !years_unit.is_empty() {
+                years_unit.push(',');
+            }
+        } else if !months.is_empty() && !years_unit.is_empty() {
+            years_unit.push(',');
+        }
 
         let suffix = if total_days < 0 {
             "to go".to_owned()
@@ -124,6 +135,7 @@ fn main() {
         } else {
             String::new()
         };
+
         let total_days = match total_days {
             0 => "(today)".to_owned(),
             1 => "(yesterday)".to_owned(),
