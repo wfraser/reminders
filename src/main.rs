@@ -6,6 +6,7 @@ use config::{Event, Reminders};
 mod table;
 use table::Alignment;
 
+use std::cmp::Ordering;
 use std::ffi::OsString;
 use std::fs::File;
 use std::io::{self, BufReader};
@@ -64,7 +65,7 @@ fn duration_ymd(diff: &chrono::Duration) -> (u64, u64, u64) {
 
 fn main() {
     let path = config_path().unwrap_or_else(|| {
-        eprintln!("usage: {} <reminders.conf>", std::env::args().nth(0).unwrap());
+        eprintln!("usage: {} <reminders.conf>", std::env::args().next().unwrap());
         std::process::exit(2);
     });
 
@@ -128,13 +129,11 @@ fn main() {
             years_unit.push(',');
         }
 
-        let suffix = if total_days < 0 {
-            "to go".to_owned()
-        } else if total_days > 0 {
-            "ago".to_owned()
-        } else {
-            String::new()
-        };
+        let suffix = match total_days.cmp(&0) {
+            Ordering::Less => "to go",
+            Ordering::Equal => "",
+            Ordering::Greater => "ago",
+        }.to_owned();
 
         let total_days = match total_days {
             0 => "(today)".to_owned(),
