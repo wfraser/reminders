@@ -36,8 +36,8 @@ impl Event {
         let colon_pos = s.find(':').ok_or_else(|| "no ':' found".to_owned())?;
 
         let date = {
-            let date_str = &s[colon_pos + 1 .. ].trim();
-            chrono::NaiveDate::parse_from_str(&date_str, "%Y-%m-%d")
+            let date_str = s[colon_pos + 1 .. ].trim();
+            chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d")
                 .map_err(|e| format!("bad date: {}", e))?
         };
 
