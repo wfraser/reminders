@@ -29,8 +29,8 @@ pub fn write_table(mut out: impl Write, columns: &[Alignment], rows: &[Vec<Strin
                 .zip(columns.iter())
                 .zip(widths.iter()) {
             match align {
-                Alignment::Left => write!(out, "{:width$} ", field, width = width)?,
-                Alignment::Right => write!(out, "{:>width$} ", field, width = width)?,
+                Alignment::Left => write!(out, "{field:width$} ")?,
+                Alignment::Right => write!(out, "{field:>width$} ")?,
             }
         }
         writeln!(out)?;

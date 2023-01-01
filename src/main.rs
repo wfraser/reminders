@@ -70,15 +70,15 @@ fn main() {
     });
 
     let config = read_config(&path).unwrap_or_else(|e| {
-        eprint!("error reading config file {:?}: ", path);
+        eprint!("error reading config file {path:?}: ");
         match e {
-            Error::IO(e) => eprintln!("I/O error: {}", e),
-            Error::Config(e) => eprintln!("{}", e),
+            Error::IO(e) => eprintln!("I/O error: {e}"),
+            Error::Config(e) => eprintln!("{e}"),
         }
         std::process::exit(2);
     });
 
-    let now = chrono::Local::today().naive_local();
+    let now = chrono::Local::now().date_naive();
 
     let columns = vec![
         Alignment::Left,    // name
@@ -139,7 +139,7 @@ fn main() {
             0 => "(today)".to_owned(),
             1 => "(yesterday)".to_owned(),
             -1 => "(tomorrow)".to_owned(),
-            d => format!("({} days)", d),
+            d => format!("({d} days)"),
         };
 
         output.push(vec![

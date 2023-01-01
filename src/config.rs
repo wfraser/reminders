@@ -38,7 +38,7 @@ impl Event {
         let date = {
             let date_str = s[colon_pos + 1 .. ].trim();
             chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d")
-                .map_err(|e| format!("bad date: {}", e))?
+                .map_err(|e| format!("bad date: {e}"))?
         };
 
         s.truncate(colon_pos);
