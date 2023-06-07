@@ -5,4 +5,5 @@ authors = ["Bill Fraser <wfraser@codewise.org>"]
 edition = "2021"
 
 [dependencies]
+calendar_duration = { git = "https://github.com/wfraser/calendar_duration", features = ["chrono"] }
 chrono = "0.4"

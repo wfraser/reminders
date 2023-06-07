@@ -30,6 +30,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a3e2c3daef883ecc1b5d58c15adae93470a91d425f3532ba1695849656af3fc1"
 
 [[package]]
+name = "calendar_duration"
+version = "0.1.1"
+source = "git+https://github.com/wfraser/calendar_duration#5064775c6f03fa5e53c0ccf2fd2fc59f3aad23fd"
+dependencies = [
+ "chrono",
+]
+
+[[package]]
 name = "cc"
 version = "1.0.79"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -143,6 +151,7 @@ dependencies = [
 name = "reminders"
 version = "0.1.0"
 dependencies = [
+ "calendar_duration",
  "chrono",
 ]
 

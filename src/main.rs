@@ -12,6 +12,8 @@ use std::fs::File;
 use std::io::{self, BufReader};
 use std::path::Path;
 
+use calendar_duration::CalendarDurationExt;
+
 #[derive(Debug)]
 pub enum Error {
     IO(io::Error),
@@ -41,26 +43,6 @@ fn config_path() -> Option<OsString> {
         return Some(s);
     }
     None
-}
-
-fn duration_ymd(diff: &chrono::Duration) -> (u64, u64, u64) {
-    let days = (diff.num_days() as f64).abs();
-
-    let years = if days > 365.25 {
-        (days / 365.25).floor() as u64
-    } else {
-        0
-    };
-
-    let months = if days > (365.25 / 12.) {
-        ((days % 365.25) / (365.25 / 12.)).floor() as u64
-    } else {
-        0
-    };
-
-    let days = (days % (365.25 / 12.)).floor() as u64;
-
-    (years, months, days)
 }
 
 fn main() {
@@ -96,23 +78,22 @@ fn main() {
     let mut output = vec![];
     for Event { mut name, date } in config.events {
         name.push(':');
-        let diff = now - date;
-        let total_days = diff.num_days();
+        let total_days = (now - date).num_days();
 
         let formatted_date = date.format("%B %-d, %Y -");
 
-        let (y,m,d) = duration_ymd(&diff);
-        let (years, mut years_unit) = match y {
+        let diff = now.calendar_duration_from(date);
+        let (years, mut years_unit) = match diff.years {
             0 => (String::new(), String::new()),
             1 => ("1".to_owned(), "year".to_owned()),
             y => (y.to_string(), "years".to_owned()),
         };
-        let (months, mut months_unit) = match m {
+        let (months, mut months_unit) = match diff.months {
             0 => (String::new(), String::new()),
             1 => ("1".to_owned(), "month".to_owned()),
             m => (m.to_string(), "months".to_owned()),
         };
-        let (days, days_unit) = match d {
+        let (days, days_unit) = match diff.days {
             0 => (String::new(), String::new()),
             1 => ("1".to_owned(), "day".to_owned()),
             d => (d.to_string(), "days".to_owned()),
