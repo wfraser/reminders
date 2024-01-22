@@ -50,30 +50,35 @@ impl Event {
     }
 }
 
-#[test]
-fn test_event_parse() {
-    let e = Event::from_string("foo:2018-06-25".to_owned()).unwrap();
-    assert_eq!("foo", &e.name);
-    assert_eq!(chrono::NaiveDate::from_ymd(2018, 6, 25), e.date);
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-#[test]
-fn test_event_parse_trim() {
-    let e = Event::from_string("  foo  :  2018-06-25  ".to_owned()).unwrap();
-    assert_eq!("  foo  ", &e.name);
-    assert_eq!(chrono::NaiveDate::from_ymd(2018, 6, 25), e.date);
-}
+    #[test]
+    fn test_event_parse() {
+        let e = Event::from_string("foo:2018-06-25".to_owned()).unwrap();
+        assert_eq!("foo", &e.name);
+        assert_eq!(chrono::NaiveDate::from_ymd_opt(2018, 6, 25), Some(e.date));
+    }
 
-#[test]
-fn test_reminders() {
-    use std::io::{BufReader, Cursor};
-    let input = "a:2018-06-25\n\
-                 # comment line\n\
-                 b: 9999-12-31 # spaghetti\n";
-    let r = Reminders::from_bufread(BufReader::new(Cursor::new(input))).unwrap();
-    assert_eq!("a", &r.events[0].name);
-    assert_eq!(chrono::NaiveDate::from_ymd(2018, 6, 25), r.events[0].date);
-    assert_eq!("b", &r.events[1].name);
-    assert_eq!(chrono::NaiveDate::from_ymd(9999, 12, 31), r.events[1].date);
-    assert_eq!(2, r.events.len());
+    #[test]
+    fn test_event_parse_trim() {
+        let e = Event::from_string("  foo  :  2018-06-25  ".to_owned()).unwrap();
+        assert_eq!("  foo  ", &e.name);
+        assert_eq!(chrono::NaiveDate::from_ymd_opt(2018, 6, 25), Some(e.date));
+    }
+
+    #[test]
+    fn test_reminders() {
+        use std::io::{BufReader, Cursor};
+        let input = "a:2018-06-25\n\
+                     # comment line\n\
+                     b: 9999-12-31 # spaghetti\n";
+        let r = Reminders::from_bufread(BufReader::new(Cursor::new(input))).unwrap();
+        assert_eq!("a", &r.events[0].name);
+        assert_eq!(chrono::NaiveDate::from_ymd_opt(2018, 6, 25), Some(r.events[0].date));
+        assert_eq!("b", &r.events[1].name);
+        assert_eq!(chrono::NaiveDate::from_ymd_opt(9999, 12, 31), Some(r.events[1].date));
+        assert_eq!(2, r.events.len());
+    }
 }
