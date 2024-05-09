@@ -4,6 +4,7 @@ use std::io::{self, Write};
 pub enum Alignment {
     Left,
     Right,
+    None,
 }
 
 pub fn write_table(mut out: impl Write, columns: &[Alignment], rows: &[Vec<String>])
@@ -11,6 +12,10 @@ pub fn write_table(mut out: impl Write, columns: &[Alignment], rows: &[Vec<Strin
 {
     let mut widths = vec![];
     for i in 0 .. columns.len() {
+        if let Alignment::None = columns[i] {
+            widths.push(0);
+            continue;
+        }
         let max = rows.iter()
             .by_ref()
             .map(|items| {
@@ -31,6 +36,7 @@ pub fn write_table(mut out: impl Write, columns: &[Alignment], rows: &[Vec<Strin
             match align {
                 Alignment::Left => write!(out, "{field:width$} ")?,
                 Alignment::Right => write!(out, "{field:>width$} ")?,
+                Alignment::None => write!(out, "{field}")?,
             }
         }
         writeln!(out)?;

@@ -14,6 +14,9 @@ use std::path::Path;
 
 use calendar_duration::CalendarDurationExt;
 
+const REVERSE: &str = "\x1b[7m";
+const RESET: &str = "\x1b[0m";
+
 #[derive(Debug)]
 pub enum Error {
     IO(io::Error),
@@ -63,6 +66,7 @@ fn main() {
     let now = chrono::Local::now().date_naive();
 
     let columns = vec![
+        Alignment::None,    // fmt_prefix
         Alignment::Left,    // name
         Alignment::Right,   // date
         Alignment::Right,   // years
@@ -73,6 +77,7 @@ fn main() {
         Alignment::Left,    // "day(s)"
         Alignment::Left,    // "ago / to go"
         Alignment::Left,    // "(1234 days)"
+        Alignment::None,    // fmt_suffix
     ];
 
     let mut output = vec![];
@@ -123,7 +128,13 @@ fn main() {
             d => format!("({d} days)"),
         };
 
+        let (fmt_prefix, fmt_suffix) = match diff.months {
+            0 | 11 => (REVERSE.to_owned(), RESET.to_owned()),
+            _ => (String::new(), String::new())
+        };
+
         output.push(vec![
+            fmt_prefix,
             name,
             formatted_date.to_string(),
             years,
@@ -134,6 +145,7 @@ fn main() {
             days_unit,
             suffix,
             total_days,
+            fmt_suffix,
         ]);
     }
 
